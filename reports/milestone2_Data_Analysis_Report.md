@@ -1,7 +1,5 @@
 # Customer Churn Data Analysis Report
 
-**Date: October 16, 2025**
-
 ## 1. Introduction
 
 This report presents a comprehensive analysis of customer churn data, focusing on advanced statistical analysis and feature engineering to identify key factors influencing churn. The analysis leverages a dataset of 3333 customer records with 77 features, including demographic, usage, and plan-related variables. The objectives are to explore feature relationships with churn, identify the most predictive features, and derive actionable insights to improve churn prediction models.
