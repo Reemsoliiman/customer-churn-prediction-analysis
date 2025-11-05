@@ -3,8 +3,6 @@ import pandas as pd
 import joblib
 import numpy as np
 
-
-# ==============================
 model = joblib.load("models/trained_models/xgboost_selected_features.pkl")
 preprocessor = joblib.load("models/trained_models/preprocessor_selected.pkl")
 
