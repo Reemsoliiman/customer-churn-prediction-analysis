@@ -1,5 +1,0 @@
-│   └── logs/
-│       ├── training_metrics.json  # Generated during model training
-│       ├── evaluation_results.csv  # Generated during model evaluation
-│       ├── cross_validation_scores.json  # Generated during cross-validation
-│       └── hyperparameter_tuning_log.txt  # Generated during hyperparameter tuning

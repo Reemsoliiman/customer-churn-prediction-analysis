@@ -34,7 +34,7 @@ def main():
     merged_data_path = collect_and_merge(
         config['data']['raw']['churn_bigml_20'],
         config['data']['raw']['churn_bigml_80'],
-        output_path=config['data']['processed']['merged_churn_data']
+        output_path=config['data']['raw']['merged_churn_data']
     )
 
     # # Step 3: Preprocessing
