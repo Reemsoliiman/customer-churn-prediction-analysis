@@ -1,0 +1,20 @@
+Account length
+Number vmail messages
+Total day minutes
+Total day calls
+Total eve minutes
+Total night minutes
+Total intl minutes
+Total intl calls
+Customer service calls
+Total_Minutes
+Intl_Minutes_per_Call
+Vmail_Rate
+Day_Night_Ratio
+International plan_Yes
+Avg_Daily_Usage
+Call_Frequency
+Intl_Usage_Rate
+log_Total_Minutes
+log_Avg_Daily_Usage
+log_Call_Frequency
