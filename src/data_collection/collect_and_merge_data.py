@@ -1,40 +1,31 @@
-﻿"""
-Merge churn-bigml-20.csv and churn-bigml-80.csv into a single dataset.
-"""
+﻿import sys
 import pandas as pd
 from pathlib import Path
-import sys
+import mlflow
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-sys.path.append(str(PROJECT_ROOT))
 
-from src.utils.logger import get_project_logger, log_dataframe_info
+def main(experiment_id: str):
+    with mlflow.start_run(run_name="merge_data", experiment_id=experiment_id):
+        file_20 = Path(sys.argv[2])
+        file_80 = Path(sys.argv[3])
+        output_path = Path(sys.argv[4])
 
-logger = get_project_logger(__name__)
+        df20 = pd.read_csv(file_20)
+        df80 = pd.read_csv(file_80)
+        merged = pd.concat([df20, df80], ignore_index=True)
 
-
-def collect_and_merge(file_20_path, file_80_path, output_path):
-    try:
-        logger.info(f"Reading {file_20_path}")
-        df20 = pd.read_csv(file_20_path)
-        log_dataframe_info(logger, df20, "df20")
-
-        logger.info(f"Reading {file_80_path}")
-        df80 = pd.read_csv(file_80_path)
-        log_dataframe_info(logger, df80, "df80")
-
-        logger.info("Merging datasets...")
-        merged_data = pd.concat([df20, df80], axis=0, ignore_index=True)
-        log_dataframe_info(logger, merged_data, "Merged data")
-
-        output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
+        merged.to_csv(output_path, index=False)
 
-        merged_data.to_csv(output_path, index=False)
-        logger.info(f"Merged data saved to: {output_path}")
+        mlflow.log_metric("rows_20", len(df20))
+        mlflow.log_metric("rows_80", len(df80))
+        mlflow.log_metric("rows_merged", len(merged))
+        mlflow.log_artifact(str(output_path), "merged_data")
+        print(f"Merged data saved: {output_path}")
 
-        return str(output_path)
-
-    except Exception as e:
-        logger.error(f"Error during data collection and merging: {str(e)}")
-        raise
+if __name__ == "__main__":
+    if len(sys.argv) != 5:
+        print("Usage: python collect_and_merge_data.py <exp_id> <file20> <file80> <output>")
+        sys.exit(1)
+    main(sys.argv[1])

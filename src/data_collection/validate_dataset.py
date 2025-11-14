@@ -1,42 +1,26 @@
-﻿"""
-Validate that required raw data files exist.
-"""
+﻿import sys
 from pathlib import Path
-import sys
+import mlflow
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-sys.path.append(str(PROJECT_ROOT))
 
-from src.utils.logger import get_project_logger
-logger = get_project_logger(__name__)
+def main(experiment_id: str):
+    with mlflow.start_run(run_name="validate_data", experiment_id=experiment_id):
+        file_20 = Path(sys.argv[2])
+        file_80 = Path(sys.argv[3])
 
+        if not file_20.exists():
+            raise FileNotFoundError(f"Missing: {file_20}")
+        if not file_80.exists():
+            raise FileNotFoundError(f"Missing: {file_80}")
 
-def verify_data_files(file_20_path, file_80_path):
-    try:
-        file_20_path = Path(file_20_path)
-        file_80_path = Path(file_80_path)
+        print(f"Found: {file_20.name}")
+        print(f"Found: {file_80.name}")
+        mlflow.log_metric("files_verified", 2)
+        print("Validation complete.")
 
-        expected_files = [
-            (file_20_path, 'churn-bigml-20.csv'),
-            (file_80_path, 'churn-bigml-80.csv')
-        ]
-
-        verified_files = []
-        for file_path, file_name in expected_files:
-            if file_path.exists():
-                logger.info(f"Found {file_name} at {file_path}")
-                verified_files.append(str(file_path))
-            else:
-                logger.error(f"Missing {file_name} at {file_path}")
-                raise FileNotFoundError(
-                    f"{file_name} not found at {file_path}. "
-                    "Please download it manually from Kaggle (search for 'telecom churn dataset') "
-                    "and place it in the data/raw/ directory."
-                )
-
-        logger.info(f"All {len(verified_files)} required files verified successfully")
-        return verified_files
-
-    except Exception as e:
-        logger.error(f"Error verifying data files: {str(e)}")
-        raise
+if __name__ == "__main__":
+    if len(sys.argv) != 4:
+        print("Usage: python validate_dataset.py <exp_id> <file20> <file80>")
+        sys.exit(1)
+    main(sys.argv[1])

@@ -1,46 +1,29 @@
 {
-  "all_results": [
+  "best": {
+    "model": "Xgboost",
+    "accuracy": 0.967016491754123,
+    "roc_auc": 0.9238741182854043
+  },
+  "all": [
     {
       "model": "Logistic Regression",
       "accuracy": 0.8440779610194903,
-      "precision": 0.43137254901960786,
-      "recall": 0.2268041237113402,
-      "f1": 0.2972972972972973,
       "roc_auc": 0.8700126605172726
     },
     {
       "model": "Decision Tree",
       "accuracy": 0.9310344827586207,
-      "precision": 0.7524752475247525,
-      "recall": 0.7835051546391752,
-      "f1": 0.7676767676767676,
       "roc_auc": 0.8698227527581841
     },
     {
       "model": "Random Forest",
       "accuracy": 0.952023988005997,
-      "precision": 0.9333333333333333,
-      "recall": 0.7216494845360825,
-      "f1": 0.813953488372093,
       "roc_auc": 0.9236118647133297
     },
     {
       "model": "Xgboost",
-      "accuracy": 0.9565217391304348,
-      "precision": 0.8953488372093024,
-      "recall": 0.7938144329896907,
-      "f1": 0.8415300546448088,
-      "roc_auc": 0.9261530113944655
+      "accuracy": 0.967016491754123,
+      "roc_auc": 0.9238741182854043
     }
-  ],
-  "best_model": "Xgboost",
-  "best_model_filename": "xgboost.pkl",
-  "best_metrics": {
-    "model": "Xgboost",
-    "accuracy": 0.9565217391304348,
-    "precision": 0.8953488372093024,
-    "recall": 0.7938144329896907,
-    "f1": 0.8415300546448088,
-    "roc_auc": 0.9261530113944655
-  }
+  ]
 }

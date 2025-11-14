@@ -2,8 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
-*.pyo
-*.pyd
+*.so
 .Python
 env/
 venv/
@@ -12,61 +11,53 @@ ENV/
 env.bak/
 venv.bak/
 
-# Virtual Environment
-pip-delete-this-directory.txt
-pip-log.txt
+# MLflow
+mlruns/
+mlflow.db
 
-# IDEs
-.idea/
-.vscode/
-*.sublime-workspace
-*.sublime-project
+# Data
+data/
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/.gitkeep
+
+# Models
+models/
+!models/artifacts/.gitkeep
+
+# Logs
+logs/
+*.log
 
 # Jupyter
 .ipynb_checkpoints
+*.ipynb_checkpoints
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Data
-data/raw/*.csv
-data/processed/*.csv
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-
-# Models
-models/trained_models/*.pkl
-models/trained_models/*.json
-!models/trained_models/.gitkeep
-
-# Logs
-*.log
-
-# Streamlit
-.streamlit/secrets.toml
-.streamlit/config.toml
-
-# Build / Distribution
+# Build / Dist
 build/
 dist/
 *.egg-info/
-*.egg
-*.manifest
-*.spec
 
-# Testing
-htmlcov/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.pytest_cache/
+# Streamlit
+.streamlit/
+cache/
 
-# Misc
-*.bak
-*.swp
-*~
+# Environment
+.env
+.env.local
+
+# Large files
+*.pkl
+*.csv
+*.parquet
+*.h5
+*.joblib
