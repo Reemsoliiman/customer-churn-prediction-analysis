@@ -1,4 +1,6 @@
-# Python
+# ──────────────────────────────────────
+# Python & packaging
+# ──────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
@@ -30,65 +32,95 @@ env.bak/
 venv.bak/
 .venv/
 
-# Jupyter Notebook
-.ipynb_checkpoints
+# ──────────────────────────────────────
+# Jupyter
+# ──────────────────────────────────────
+.ipynb_checkpoints/
 *.ipynb_checkpoints/
 notebooks/.ipynb_checkpoints/
 
-# PyCharm
+# Notebook HTML exports (Plotly, nbconvert)
+*.html
+notebooks/*.html
+visualizations/**/*.html
+
+# ──────────────────────────────────────
+# IDE
+# ──────────────────────────────────────
 .idea/
-
-# VS Code
 .vscode/
-
-# MLflow
-mlruns/
-mlartifacts/
-
-# Model artifacts (optional - comment out if you want to track models)
-models/trained_models/*.pkl
-models/artifacts/*.pkl
-!models/trained_models/.gitkeep
-!models/artifacts/.gitkeep
-
-# Data (keep raw, ignore processed)
-data/processed/
-data/external/
-!data/raw/churn-bigml-20.csv
-!data/raw/churn-bigml-80.csv
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!data/external/.gitkeep
-
-# Logs
-*.log
-logs/
-
-# OS
-.DS_Store
-Thumbs.db
 *.swp
 *.swo
 *~
 
-# Environment variables
-.env
-.env.local
+# ──────────────────────────────────────
+# MLflow
+# ──────────────────────────────────────
+mlruns/
+mlartifacts/
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
+# ──────────────────────────────────────
+# Data (keep only the two raw CSVs)
+# ──────────────────────────────────────
+data/processed/
+data/external/
+!data/raw/churn-bigml-20.csv
+!data/raw/churn-bigml-80.csv
+!data/raw/merged_churn_data.csv   # keep merged raw file (pipeline creates it)
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/external/.gitkeep
 
-# Docker
-*.dockerignore
+# ──────────────────────────────────────
+# Models & artifacts (do NOT track large .pkl files)
+# ──────────────────────────────────────
+models/trained_models/*.pkl
+models/artifacts/*.pkl
+models/artifacts/*.json
+!models/trained_models/.gitkeep
+!models/artifacts/.gitkeep
 
-# Temporary files
+# ──────────────────────────────────────
+# Visualizations (ignore generated files)
+# ──────────────────────────────────────
+visualizations/static/*.png
+visualizations/static/*.jpg
+visualizations/static/*.pdf
+visualizations/interactive/*.html
+visualizations/interactive/*.js
+visualizations/interactive/*.json
+# keep the folder structure
+!visualizations/static/.gitkeep
+!visualizations/interactive/.gitkeep
+
+# ──────────────────────────────────────
+# Logs / Temp
+# ──────────────────────────────────────
+*.log
+logs/
 *.tmp
 *.temp
 tmp/
 temp/
 
-# Config overrides
-config.local.yaml
+# ──────────────────────────────────────
+# Testing / Coverage
+# ──────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ──────────────────────────────────────
+# Docker / env
+# ──────────────────────────────────────
+Dockerfile*
+.dockerignore
+.env
+.env.local
+
+# ──────────────────────────────────────
+# OS
+# ──────────────────────────────────────
+.DS_Store
+Thumbs.db
