@@ -1,186 +1,148 @@
 ﻿"""
-Streamlit app for churn prediction with SHAP explanations.
-Uses shared helper functions to ensure consistency with training.
+Streamlit UI → calls FastAPI /predict → shows churn risk + SHAP
 """
 import streamlit as st
+import requests
 import pandas as pd
-import joblib
-import numpy as np
-import shap
 import plotly.graph_objects as go
+import os
 from pathlib import Path
-import sys
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-sys.path.append(str(PROJECT_ROOT))
+# ------------------------------------------------------------------
+# CONFIG – change only if you deploy elsewhere
+# ------------------------------------------------------------------
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000/predict")  # local default
+# When you deploy on Render, set env var API_URL = https://churn-api.onrender.com/predict
 
-from src.utils.helpers import engineer_features, align_features_for_prediction
-
-# -------------------------------------------------
-# CONFIG
-# -------------------------------------------------
-st.set_page_config(page_title="Churn Predict & Explain", layout="wide")
-
-ARTIFACTS_DIR = PROJECT_ROOT / "models" / "artifacts"
-
-@st.cache_resource
-def load_model_and_features():
-    model = joblib.load(ARTIFACTS_DIR / "best_model_final.pkl")
-    selected_features = joblib.load(ARTIFACTS_DIR / "selected_features.pkl")
-    explainer = shap.TreeExplainer(model)
-    return model, selected_features, explainer
-
-model, selected_features, explainer = load_model_and_features()
-
-# -------------------------------------------------
-# UI – INPUT FORM
-# -------------------------------------------------
+# ------------------------------------------------------------------
+# PAGE CONFIG
+# ------------------------------------------------------------------
+st.set_page_config(page_title="Telco Churn Predictor", layout="wide")
 st.title("Customer Churn – Predict & Explain")
-st.markdown("Enter customer data → get **churn risk** + **explanation** of the model's decision.")
+st.markdown(
+    "Enter customer data → get **churn probability** + **SHAP explanation** "
+    "powered by a tree model."
+)
 
-with st.form("main_form"):
+# ------------------------------------------------------------------
+# INPUT FORM
+# ------------------------------------------------------------------
+with st.form("churn_form"):
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("Usage Information")
-        total_day_minutes = st.slider("Total Day Minutes", 0, 350, 180)
-        total_eve_minutes = st.slider("Total Eve Minutes", 0, 300, 150)
-        total_night_minutes = st.slider("Total Night Minutes", 0, 300, 150)
-        total_intl_minutes = st.slider("Total Intl Minutes", 0, 20, 5)
+        st.subheader("Usage")
+        total_day_minutes = st.slider("Total day minutes", 0, 350, 180)
+        total_eve_minutes = st.slider("Total eve minutes", 0, 300, 150)
+        total_night_minutes = st.slider("Total night minutes", 0, 300, 150)
+        total_intl_minutes = st.slider("Total intl minutes", 0, 20, 5)
 
-        total_day_calls = st.slider("Total Day Calls", 0, 200, 100)
-        total_eve_calls = st.slider("Total Eve Calls", 0, 200, 90)
-        total_night_calls = st.slider("Total Night Calls", 0, 200, 90)
-        total_intl_calls = st.slider("Total Intl Calls", 0, 20, 3)
+        total_day_calls = st.slider("Total day calls", 0, 200, 100)
+        total_eve_calls = st.slider("Total eve calls", 0, 200, 90)
+        total_night_calls = st.slider("Total night calls", 0, 200, 90)
+        total_intl_calls = st.slider("Total intl calls", 0, 20, 3)
 
     with col2:
-        st.subheader("Customer Information")
-        international_plan = st.selectbox("International Plan", ["No", "Yes"])
-        voice_mail_plan = st.selectbox("Voice Mail Plan", ["No", "Yes"])
-        account_length = st.slider("Account Length (days)", 1, 250, 100)
-        num_vmail_msgs = st.slider("Voice Mail Messages", 0, 50, 0)
-        customer_service_calls = st.slider("Customer Service Calls", 0, 9, 1)
+        st.subheader("Account")
+        account_length = st.slider("Account length (days)", 1, 250, 100)
+        international_plan = st.selectbox("International plan", ["No", "Yes"])
+        voice_mail_plan = st.selectbox("Voice mail plan", ["No", "Yes"])
+        num_vmail_msgs = st.slider("Number vmail messages", 0, 50, 0)
+        customer_service_calls = st.slider("Customer service calls", 0, 9, 1)
 
     submitted = st.form_submit_button("Predict & Explain", use_container_width=True)
 
-# -------------------------------------------------
-# PREDICTION + SHAP
-# -------------------------------------------------
+# ------------------------------------------------------------------
+# CALL FASTAPI
+# ------------------------------------------------------------------
+def call_api(payload: dict) -> dict | None:
+    """POST to FastAPI, return JSON or None on error."""
+    try:
+        headers = {"Content-Type": "application/json"}
+        resp = requests.post(API_URL, json=payload, headers=headers, timeout=30)
+        resp.raise_for_status()
+        return resp.json()
+    except requests.exceptions.RequestException as e:
+        st.error(f"API call failed: {e}")
+        return None
+
+# ------------------------------------------------------------------
+# PREDICTION + SHAP DISPLAY
+# ------------------------------------------------------------------
 if submitted:
-    raw_input = {
+    # Build payload **exactly** as FastAPI expects (original column names)
+    payload = {
         "Account length": account_length,
-        "International plan": 1 if international_plan == "Yes" else 0,
-        "Voice mail plan": 1 if voice_mail_plan == "Yes" else 0,
+        "International plan": international_plan,
+        "Voice mail plan": voice_mail_plan,
         "Number vmail messages": num_vmail_msgs,
-        "Total day minutes": total_day_minutes,
-        "Total eve minutes": total_eve_minutes,
-        "Total night minutes": total_night_minutes,
-        "Total intl minutes": total_intl_minutes,
-        "Customer service calls": customer_service_calls,
+        "Total day minutes": float(total_day_minutes),
+        "Total eve minutes": float(total_eve_minutes),
+        "Total night minutes": float(total_night_minutes),
+        "Total intl minutes": float(total_intl_minutes),
         "Total day calls": total_day_calls,
         "Total eve calls": total_eve_calls,
         "Total night calls": total_night_calls,
         "Total intl calls": total_intl_calls,
+        "Customer service calls": customer_service_calls,
     }
 
-    df_input = pd.DataFrame([raw_input])
-    df_engineered = engineer_features(df_input, is_training=False)
-    X_aligned = align_features_for_prediction(df_engineered, selected_features)
-    X_np = X_aligned.values
+    with st.spinner("Contacting prediction service…"):
+        result = call_api(payload)
 
-    prob = model.predict_proba(X_np)[0, 1]
-    pred = int(prob > 0.5)
+    if not result:
+        st.stop()
 
+    prob = result["churn_probability"]
+    pred = result["churn_prediction"]
+    top_shap = result["top_shap_features"]
+
+    # ----- Prediction Result -----
     st.markdown("---")
-    st.subheader("Prediction Result")
-
+    st.subheader("Prediction")
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if pred:
-            st.error("### HIGH RISK")
-            st.metric("Churn Probability", f"{prob:.1%}")
+            st.error("**HIGH RISK**")
         else:
-            st.success("### LOW RISK")
-            st.metric("Churn Probability", f"{prob:.1%}")
+            st.success("**LOW RISK**")
+        st.metric("Churn Probability", f"{prob:.1%}")
 
-    # ---------- SHAP ----------
-    try:
-        st.markdown("---")
-        st.subheader("Model Explanation (SHAP)")
+    # ----- SHAP Explanation -----
+    st.markdown("---")
+    st.subheader("Why the model decided that (SHAP)")
 
-        shap_vals = explainer.shap_values(X_np)
+    # Force-plot style bar chart (top-6)
+    shap_df = pd.DataFrame(top_shap)
+    fig = go.Figure(go.Bar(
+        x=shap_df["shap_value"],
+        y=shap_df["feature"],
+        orientation='h',
+        marker_color=['#ef4444' if v > 0 else '#3b82f6' for v in shap_df["shap_value"]],
+        text=[f"{v:+.3f}" for v in shap_df["shap_value"]],
+        textposition='outside'
+    ))
+    fig.update_layout(
+        title="Top 6 feature impacts",
+        xaxis_title="SHAP value (impact on churn probability)",
+        yaxis=dict(categoryorder='total ascending'),
+        height=400,
+        showlegend=False
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
-        if isinstance(shap_vals, list) and len(shap_vals) > 1:
-            shap_class1 = shap_vals[1].flatten()
-            base_value = explainer.expected_value[1]
-        else:
-            shap_class1 = shap_vals.flatten()
-            base_value = explainer.expected_value
+    # Plain-English summary
+    st.markdown("**Plain English**")
+    for row in top_shap[:3]:
+        impact = "increased" if row["shap_value"] > 0 else "decreased"
+        st.markdown(f"• **{row['feature']}** {impact} churn risk by **{abs(row['shap_value']):.3f}**")
 
-        if len(shap_class1) != len(selected_features):
-            st.error(
-                f"SHAP length mismatch: {len(shap_class1)} vs {len(selected_features)}. "
-                "Please retrain the model."
-            )
-        else:
-            # Force plot
-            st.markdown("#### SHAP Force Plot")
-            st.caption("Shows how each feature pushed the prediction higher or lower.")
-            force_html = shap.force_plot(
-                base_value,
-                shap_class1,
-                X_np,
-                feature_names=selected_features,
-                matplotlib=False,
-                show=False,
-            )
-            shap_html = f"<head>{shap.getjs()}</head><body>{force_html.html()}</body>"
-            st.components.v1.html(shap_html, height=200, scrolling=True)
-
-            # Top-6 bar chart
-            st.markdown("#### Top 6 Feature Impacts")
-            shap_df = pd.DataFrame({
-                "Feature": selected_features,
-                "SHAP": shap_class1
-            }).assign(Abs=lambda d: d["SHAP"].abs())\
-              .sort_values("Abs", ascending=False).head(6)
-
-            fig = go.Figure(go.Bar(
-                x=shap_df["SHAP"],
-                y=shap_df["Feature"],
-                orientation='h',
-                marker_color=['#ef4444' if v > 0 else '#3b82f6' for v in shap_df["SHAP"]],
-                text=[f"{v:+.3f}" for v in shap_df["SHAP"]],
-                textposition='outside'
-            ))
-            fig.update_layout(
-                title="Features that increased (+) or decreased (-) churn risk",
-                xaxis_title="SHAP Value",
-                yaxis=dict(categoryorder='total ascending'),
-                height=400,
-                showlegend=False
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
-            # Plain-English
-            st.markdown("#### Plain English")
-            top3 = shap_df.head(3)
-            for _, row in top3.iterrows():
-                impact = "increased" if row['SHAP'] > 0 else "decreased"
-                st.markdown(
-                    f"**{row['Feature']}** {impact} churn risk by **{abs(row['SHAP']):.3f}**"
-                )
-
-    except Exception as e:
-        st.error(f"SHAP explanation failed: {e}")
-        st.info("Make sure the saved model is a tree-based classifier (RandomForest / XGBoost).")
-
-# -------------------------------------------------
+# ------------------------------------------------------------------
 # FOOTER
-# -------------------------------------------------
+# ------------------------------------------------------------------
 st.markdown("---")
 st.caption(
-    "Model trained on Telco Churn dataset | "
+    "Model: XGBoost/RandomForest (best from MLflow) | "
     "Feature selection: RFE (20 features) | "
     "Explanations: SHAP TreeExplainer"
 )
