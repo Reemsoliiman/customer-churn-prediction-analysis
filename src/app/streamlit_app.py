@@ -9,10 +9,9 @@ import os
 from pathlib import Path
 
 # ------------------------------------------------------------------
-# CONFIG – change only if you deploy elsewhere
+# CONFIG
 # ------------------------------------------------------------------
-API_URL = os.getenv("API_URL", "http://127.0.0.1:8000/predict")  # local default
-# When you deploy on Render, set env var API_URL = https://churn-api.onrender.com/predict
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000/predict")
 
 # ------------------------------------------------------------------
 # PAGE CONFIG
@@ -70,7 +69,6 @@ def call_api(payload: dict) -> dict | None:
 # PREDICTION + SHAP DISPLAY
 # ------------------------------------------------------------------
 if submitted:
-    # Build payload **exactly** as FastAPI expects (original column names)
     payload = {
         "Account length": account_length,
         "International plan": international_plan,
@@ -112,7 +110,6 @@ if submitted:
     st.markdown("---")
     st.subheader("Why the model decided that (SHAP)")
 
-    # Force-plot style bar chart (top-6)
     shap_df = pd.DataFrame(top_shap)
     fig = go.Figure(go.Bar(
         x=shap_df["shap_value"],
@@ -131,7 +128,6 @@ if submitted:
     )
     st.plotly_chart(fig, use_container_width=True)
 
-    # Plain-English summary
     st.markdown("**Plain English**")
     for row in top_shap[:3]:
         impact = "increased" if row["shap_value"] > 0 else "decreased"

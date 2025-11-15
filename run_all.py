@@ -1,6 +1,6 @@
 ﻿"""
 Full automated churn-prediction pipeline.
-FIXED: PYTHONPATH for src imports
+Updated for new directory structure.
 """
 import os
 import sys
@@ -9,7 +9,6 @@ from pathlib import Path
 import mlflow
 import warnings
 
-# Suppress FutureWarning
 warnings.filterwarnings("ignore", category=FutureWarning, module="mlflow")
 
 # ----------------------------------------------------------------------
@@ -18,11 +17,9 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="mlflow")
 PROJECT_ROOT = Path(__file__).resolve().parent
 SRC_DIR = PROJECT_ROOT / "src"
 
-# Create mlruns directory
 mlruns_dir = PROJECT_ROOT / "mlruns"
 mlruns_dir.mkdir(exist_ok=True)
 
-# Use correct file URI
 mlflow.set_tracking_uri(mlruns_dir.as_uri())
 print(f"MLflow tracking URI: {mlflow.get_tracking_uri()}")
 
@@ -62,7 +59,6 @@ def run_step(step_name: str, script_path: Path, experiment_id: str, *args):
         with mlflow.start_run(run_name=step_name, experiment_id=experiment_id):
             mlflow.log_artifact(str(full_path), "scripts")
 
-            # CRITICAL: Add src to PYTHONPATH
             env = os.environ.copy()
             python_path = env.get("PYTHONPATH", "")
             src_path = str(SRC_DIR)
@@ -75,7 +71,7 @@ def run_step(step_name: str, script_path: Path, experiment_id: str, *args):
                 text=True,
                 cwd=PROJECT_ROOT,
                 shell=True,
-                env=env  # Pass modified environment
+                env=env
             )
 
             mlflow.log_text(result.stdout or "No output", "stdout.txt")
@@ -120,7 +116,7 @@ def main():
     
     run_step(
         "1/6 Validate data",
-        Path("src/data_collection/validate_dataset.py"),
+        Path("src/pipelines/validate_data.py"),
         experiment_id,
         str(raw_20),
         str(raw_80)
@@ -132,7 +128,7 @@ def main():
     merged_path = PROJECT_ROOT / "data" / "raw" / "merged_churn_data.csv"
     run_step(
         "2/6 Merge raw data",
-        Path("src/data_collection/collect_and_merge_data.py"),
+        Path("src/pipelines/merge_data.py"),
         experiment_id,
         str(raw_20),
         str(raw_80),
@@ -144,7 +140,7 @@ def main():
     # ------------------------------------------------------------------
     run_step(
         "3/6 Pre-processing",
-        Path("src/preprocessing/pipeline.py"),
+        Path("src/pipelines/preprocess.py"),
         experiment_id
     )
 
@@ -153,7 +149,7 @@ def main():
     # ------------------------------------------------------------------
     run_step(
         "4/6 Feature engineering",
-        Path("src/preprocessing/feature_engineering.py"),
+        Path("src/pipelines/engineer_features.py"),
         experiment_id
     )
 
@@ -162,7 +158,7 @@ def main():
     # ------------------------------------------------------------------
     run_step(
         "5/6 Train models",
-        Path("src/modeling/train_model.py"),
+        Path("src/pipelines/train.py"),
         experiment_id
     )
 
@@ -171,7 +167,7 @@ def main():
     # ------------------------------------------------------------------
     run_step(
         "6/6 Evaluation",
-        Path("src/modeling/evaluate.py"),
+        Path("src/pipelines/evaluate.py"),
         experiment_id
     )
 

@@ -2,10 +2,9 @@
 import pandas as pd
 from pathlib import Path
 import mlflow
+from src.utils.helpers import handle_missing_values, encode_categorical_features
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-from utils.helpers import handle_missing_values, encode_categorical_features
-
 RAW_PATH = PROJECT_ROOT / "data" / "raw" / "merged_churn_data.csv"
 CLEANED_PATH = PROJECT_ROOT / "data" / "processed" / "cleaned_data.csv"
 
@@ -29,6 +28,6 @@ def main(experiment_id: str):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python pipeline.py <experiment_id>")
+        print("Usage: python preprocess.py <experiment_id>")
         sys.exit(1)
     main(sys.argv[1])

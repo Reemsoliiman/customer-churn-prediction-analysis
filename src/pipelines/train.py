@@ -50,6 +50,6 @@ def main(experiment_id: str):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python train_model.py <experiment_id>")
+        print("Usage: python train.py <experiment_id>")
         sys.exit(1)
     main(sys.argv[1])

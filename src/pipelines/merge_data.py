@@ -26,6 +26,6 @@ def main(experiment_id: str):
 
 if __name__ == "__main__":
     if len(sys.argv) != 5:
-        print("Usage: python collect_and_merge_data.py <exp_id> <file20> <file80> <output>")
+        print("Usage: python merge_data.py <exp_id> <file20> <file80> <output>")
         sys.exit(1)
     main(sys.argv[1])

@@ -1,4 +1,3 @@
-# api/schemas.py
 from pydantic import BaseModel, Field
 from typing import Literal
 
@@ -6,10 +5,8 @@ from typing import Literal
 class ChurnInput(BaseModel):
     """
     Input schema for the /predict endpoint.
-    • JSON keys **must match the original CSV column names** (with spaces).
-    • `populate_by_name = True` lets you also send snake_case keys if you want.
+    JSON keys must match the original CSV column names (with spaces).
     """
-    # --- fields that have *exact* CSV names (spaces) ---
     Account_length: int = Field(..., ge=1, le=250, alias="Account length")
     International_plan: Literal["Yes", "No"] = Field(..., alias="International plan")
     Voice_mail_plan: Literal["Yes", "No"] = Field(..., alias="Voice mail plan")
@@ -25,4 +22,4 @@ class ChurnInput(BaseModel):
     Customer_service_calls: int = Field(..., ge=0, le=10, alias="Customer service calls")
 
     class Config:
-        populate_by_name = True   # <-- allows snake_case keys as an alternative
+        populate_by_name = True

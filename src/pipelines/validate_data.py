@@ -21,6 +21,6 @@ def main(experiment_id: str):
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
-        print("Usage: python validate_dataset.py <exp_id> <file20> <file80>")
+        print("Usage: python validate_data.py <exp_id> <file20> <file80>")
         sys.exit(1)
     main(sys.argv[1])

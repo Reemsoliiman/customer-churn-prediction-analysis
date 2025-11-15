@@ -5,10 +5,9 @@ from pathlib import Path
 from sklearn.feature_selection import RFE
 from sklearn.ensemble import RandomForestClassifier
 import mlflow
+from src.utils.helpers import engineer_features
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-from utils.helpers import engineer_features
-
 CLEANED_PATH = PROJECT_ROOT / "data" / "processed" / "cleaned_data.csv"
 FINAL_PATH = PROJECT_ROOT / "data" / "processed" / "final_processed_data.csv"
 FEATS_PATH = PROJECT_ROOT / "models" / "artifacts" / "selected_features.pkl"
@@ -38,6 +37,6 @@ def main(experiment_id: str):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python feature_engineering.py <experiment_id>")
+        print("Usage: python engineer_features.py <experiment_id>")
         sys.exit(1)
     main(sys.argv[1])
