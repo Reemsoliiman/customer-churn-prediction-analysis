@@ -24,7 +24,7 @@ def preprocess_input(raw: ChurnInput) -> pd.DataFrame:
 
     df = pd.DataFrame([data])
     df_engineered = engineer_features(df, is_training=False)
-    X_aligned = align_features_for_prediction(df_engineered, _selected_features)
+    X_aligned = align_features_for_prediction(df_engineered)
     return X_aligned
 
 def predict_and_explain(X: pd.DataFrame) -> Dict[str, Any]:
