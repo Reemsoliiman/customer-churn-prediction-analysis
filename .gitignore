@@ -124,3 +124,8 @@ Dockerfile*
 # ──────────────────────────────────────
 .DS_Store
 Thumbs.db
+
+
+# Monitoring reports & simulated production data
+monitoring/
+monitoring/*
