@@ -1,6 +1,3 @@
-Here’s your **brand-new, clean, up-to-date README** — with the **monitoring & automated retraining** proudly featured, **tests and Docker removed**, and everything else polished and accurate as of your final working version.
-
-```markdown
 # Telco Customer Churn Prediction + Production Monitoring
 ![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
 ![MLflow](https://img.shields.io/badge/MLflow-Tracking-orange.svg)
