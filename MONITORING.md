@@ -145,6 +145,24 @@ Production Data
 * **Target Drift (Concept Drift)** → Chi-square test on label distribution
 * Full drift information logged and visualized in MLflow
 
+## Alert System
+
+### Current Implementation
+- **Console Logs**: Real-time alerts printed to terminal
+- **MLflow Tracking**: All metrics logged for historical analysis
+
+### Alert Triggers
+- Performance drop: ROC-AUC < 0.75
+- Feature drift: p-value < 0.05 for >30% of features
+- Concept drift: Target distribution shift detected
+- Prediction drift: Model output distribution changed
+
+### Future Enhancements
+- Email notifications via SendGrid API
+- Slack webhook integration for team alerts
+- PagerDuty for critical performance degradation
+- Grafana dashboard for real-time monitoring
+
 ---
 
 ## **Requirement 3: Establish Alerts**

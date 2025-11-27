@@ -66,6 +66,31 @@ def engineer_features(df: pd.DataFrame, is_training: bool = True) -> pd.DataFram
             df[col] = df[col].fillna(0).clip(lower=0)
             df[f"log_{col}"] = np.log1p(df[col])
     
+    # 6. Interaction features (cross-feature relationships)
+    # High usage + high service calls = at-risk customer
+    if "Total_Minutes" in df.columns and "Customer service calls" in df.columns:
+        df["Usage_Service_Interaction"] = (
+            df["Total_Minutes"] / (df["Total_Minutes"].max() + 1)
+        ) * df["Customer service calls"]
+    
+    # International plan holders with high intl usage
+    if "International plan" in df.columns and "Total intl minutes" in df.columns:
+        df["Intl_Plan_Usage_Flag"] = (
+            (df["International plan"] == 1) & (df["Total intl minutes"] > df["Total intl minutes"].median())
+        ).astype(int)
+    
+    # Heavy daytime users (business customers indicator)
+    if "Total day minutes" in df.columns and "Total_Minutes" in df.columns:
+        df["Day_Usage_Ratio"] = df["Total day minutes"] / (df["Total_Minutes"] + 1)
+    
+    # Tenure × Usage intensity (loyal high-value customers)
+    if "Customer_tenure_months" in df.columns and "Avg_Daily_Usage" in df.columns:
+        df["Tenure_Usage_Score"] = df["Customer_tenure_months"] * df["Avg_Daily_Usage"]
+    
+    # Service calls per tenure month (chronic complainers)
+    if "Customer service calls" in df.columns and "Customer_tenure_months" in df.columns:
+        df["Service_Calls_Per_Month"] = df["Customer service calls"] / (df["Customer_tenure_months"] + 1)        
+        
     return df
 
 

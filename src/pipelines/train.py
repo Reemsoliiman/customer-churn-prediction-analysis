@@ -3,6 +3,7 @@ import pandas as pd
 import joblib
 from pathlib import Path
 from sklearn.model_selection import train_test_split
+from imblearn.over_sampling import SMOTE
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -22,7 +23,13 @@ def main(experiment_id: str):
     X = df.drop("Churn", axis=1)
     y = df["Churn"]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
-
+    
+    # Class balancing with SMOTE (addresses class imbalance)
+    print(f"Before SMOTE: {y_train.value_counts().to_dict()}")
+    smote = SMOTE(random_state=42)
+    X_train, y_train = smote.fit_resample(X_train, y_train)
+    print(f"After SMOTE: {y_train.value_counts()}")
+    
     ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
     joblib.dump((X_test, y_test), ARTIFACTS_DIR / "test_data.pkl")
 
