@@ -35,7 +35,7 @@ def simulate_production_batch(
     np.random.seed(int(datetime.now().timestamp()) % 2**32)  # different every time
 
     if 'Total day minutes' in batch.columns:
-        batch['Total day minutes'] += np.random.normal(25, 20, len(batch))
+        batch['Total day minutes'] += np.random.normal(10, 5, len(batch))
         batch['Total day minutes'] = batch['Total day minutes'].clip(0, 400)
 
     if 'Customer service calls' in batch.columns:
@@ -47,7 +47,7 @@ def simulate_production_batch(
         batch['Total intl minutes'] = batch['Total intl minutes'].clip(0, 20)
 
     # Simulate concept drift: flip 10–15% of labels
-    flip_ratio = np.random.uniform(0.10, 0.15)
+    flip_ratio = np.random.uniform(0.02, 0.05)
     flip_idx = np.random.choice(batch.index, size=int(len(batch) * flip_ratio), replace=False)
     batch.loc[flip_idx, 'Churn'] = 1 - batch.loc[flip_idx, 'Churn']
 

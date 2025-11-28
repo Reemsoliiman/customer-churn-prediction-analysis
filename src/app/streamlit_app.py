@@ -231,18 +231,20 @@ elif page == "Monitoring Dashboard":
         st.json(latest_report)
 
 # ===========================================================================
-# PAGE 3: ANALYSIS DASHBOARD – FINAL & FIXED
+# PAGE 3: ANALYSIS DASHBOARD – ENHANCED & HARMONIZED
 # ===========================================================================
 elif page == "Analysis Dashboard":
     st.markdown("<div class='main-header'>Customer Churn Analysis</div>", unsafe_allow_html=True)
     st.markdown("Interactive exploration of customer behaviors and churn drivers.")
 
-    # --- 1. CONFIGURATION & STYLE ---
-    # RESTORED: Your preferred Green/Red palette
-    CHURN_COLOR = "#ef4444"  # Red
-    RETAIN_COLOR = "#10b981" # Green
+    # --- UNIFIED COLOR PALETTE ---
+    CHURN_COLOR = "#FF6B6B"      # Warm Red
+    RETAIN_COLOR = "#4ECDC4"     # Teal
+    NEUTRAL_BG = "#F7F9FC"       # Light background
+    ACCENT = "#FFE66D"           # Yellow accent
+    
     COLOR_MAP = {0: RETAIN_COLOR, 1: CHURN_COLOR}
-    LABEL_MAP = {0: "No (Retained)", 1: "Yes (Churned)"}
+    LABEL_MAP = {0: "Retained", 1: "Churned"}
 
     @st.cache_data
     def load_data():
@@ -254,138 +256,293 @@ elif page == "Analysis Dashboard":
 
     df = load_data()
 
-    # --- 2. SIDEBAR FILTERS ---
-    st.sidebar.markdown("### 🔍 Filter Data")
+    # --- SIDEBAR FILTERS ---
+    st.sidebar.markdown("### Filter Data")
     
-    # Filter 1: Customer Service Calls
     min_calls, max_calls = int(df['Customer service calls'].min()), int(df['Customer service calls'].max())
     calls_range = st.sidebar.slider("Customer Service Calls", min_calls, max_calls, (0, max_calls))
 
-    # Filter 2: International Plan
     intl_options = ["No", "Yes"]
     intl_selection = st.sidebar.multiselect("International Plan", intl_options, default=intl_options)
     intl_mask_vals = [1 if x == "Yes" else 0 for x in intl_selection]
 
-    # Filter 3: Voice Mail Plan
     vmail_selection = st.sidebar.multiselect("Voice Mail Plan", intl_options, default=intl_options)
     vmail_mask_vals = [1 if x == "Yes" else 0 for x in vmail_selection]
 
-    # APPLY FILTERS (On Numeric Data)
+    # APPLY FILTERS
     filtered_df = df[
         (df['Customer service calls'].between(*calls_range)) &
         (df['International plan'].isin(intl_mask_vals)) &
         (df['Voice mail plan'].isin(vmail_mask_vals))
     ]
 
-    # --- 3. KEY METRICS ROW ---
+    # --- KEY METRICS WITH STYLED CARDS ---
     st.markdown("### Key Performance Indicators")
+    
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Total Customers", f"{len(filtered_df):,}")
+        st.markdown(f"""
+        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    padding: 20px; border-radius: 10px; text-align: center;'>
+            <h3 style='color: white; margin: 0; font-size: 16px;'>Total Customers</h3>
+            <h1 style='color: white; margin: 10px 0; font-size: 32px;'>{len(filtered_df):,}</h1>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
         churn_rate = filtered_df['Churn'].mean()
-        st.metric("Churn Rate", f"{churn_rate:.1%}", delta_color="inverse")
+        st.markdown(f"""
+        <div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
+                    padding: 20px; border-radius: 10px; text-align: center;'>
+            <h3 style='color: white; margin: 0; font-size: 16px;'>Churn Rate</h3>
+            <h1 style='color: white; margin: 10px 0; font-size: 32px;'>{churn_rate:.1%}</h1>
+        </div>
+        """, unsafe_allow_html=True)
 
     with col3:
         high_risk_count = (filtered_df['Customer service calls'] > 3).sum()
-        st.metric("High-Risk Callers (>3)", f"{high_risk_count:,}")
+        st.markdown(f"""
+        <div style='background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); 
+                    padding: 20px; border-radius: 10px; text-align: center;'>
+            <h3 style='color: white; margin: 0; font-size: 16px;'>High-Risk Callers</h3>
+            <h1 style='color: white; margin: 10px 0; font-size: 32px;'>{high_risk_count:,}</h1>
+        </div>
+        """, unsafe_allow_html=True)
 
     with col4:
         intl_users = (filtered_df['International plan'] == 1).sum()
-        st.metric("Intl Plan Users", f"{intl_users:,}")
+        st.markdown(f"""
+        <div style='background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); 
+                    padding: 20px; border-radius: 10px; text-align: center;'>
+            <h3 style='color: white; margin: 0; font-size: 16px;'>Intl Plan Users</h3>
+            <h1 style='color: white; margin: 10px 0; font-size: 32px;'>{intl_users:,}</h1>
+        </div>
+        """, unsafe_allow_html=True)
 
-    st.markdown("---")
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    # --- 4. VISUALIZATIONS ---
-    def clean_layout(fig, title):
+    # --- UNIFIED PLOT STYLING ---
+    def apply_modern_theme(fig, title):
         fig.update_layout(
-            title=dict(text=title, font=dict(size=18)),
+            title=dict(
+                text=f"<b>{title}</b>",
+                font=dict(size=16, color="white")
+            ),
             paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(family="Segoe UI, sans-serif"),
+            plot_bgcolor='#F7F9FC',
+            font=dict(family="Segoe UI", size=12, color="white"),
             showlegend=True,
-            margin=dict(l=20, r=20, t=50, b=20)
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1,
+                bgcolor="rgba(255,255,255,0.8)",
+                bordercolor="#DADADA",
+                borderwidth=1
+            ),
+            margin=dict(l=40, r=40, t=80, b=40),
+            height=420
         )
-        fig.update_xaxes(showgrid=False, linecolor='lightgray')
-        fig.update_yaxes(showgrid=True, gridcolor='lightgray')
+        fig.update_xaxes(showgrid=True, gridcolor='rgba(200,200,200,0.3)', linecolor='#DADADA')
+        fig.update_yaxes(showgrid=True, gridcolor='rgba(200,200,200,0.3)', linecolor='#DADADA')
         return fig
 
+    # --- ROW 1: USAGE INSIGHTS ---
+    st.markdown("### Usage & Service Patterns")
     col_left, col_right = st.columns(2)
 
-    # PLOT 1: Distribution of Day Minutes
     with col_left:
-        fig1 = px.histogram(
-            filtered_df, 
-            x="Total day minutes", 
-            color="Churn",
-            nbins=40,
-            opacity=0.85,
-            color_discrete_map=COLOR_MAP
-        )
-        new_names = {"0": "Retained", "1": "Churned"}
-        fig1.for_each_trace(lambda t: t.update(name=new_names.get(t.name, t.name)))
-        fig1 = clean_layout(fig1, "Usage Distribution: Total Day Minutes")
+        fig1 = go.Figure()
+        
+        # Retained customers
+        retained = filtered_df[filtered_df['Churn'] == 0]['Total day minutes']
+        fig1.add_trace(go.Histogram(
+            x=retained,
+            name='Retained',
+            marker_color=RETAIN_COLOR,
+            opacity=0.75,
+            nbinsx=30
+        ))
+        
+        # Churned customers
+        churned = filtered_df[filtered_df['Churn'] == 1]['Total day minutes']
+        fig1.add_trace(go.Histogram(
+            x=churned,
+            name='Churned',
+            marker_color=CHURN_COLOR,
+            opacity=0.75,
+            nbinsx=30
+        ))
+        
+        fig1.update_layout(barmode='overlay')
+        fig1 = apply_modern_theme(fig1, "Usage Distribution: Total Day Minutes")
+        fig1.update_xaxes(title_text="Total Day Minutes")
+        fig1.update_yaxes(title_text="Number of Customers")
         st.plotly_chart(fig1, use_container_width=True)
 
-    # PLOT 2: Customer Service Calls
     with col_right:
+        # Violin plot for service calls
         box_df = filtered_df.copy()
         box_df['Churn Label'] = box_df['Churn'].map(LABEL_MAP)
         
-        fig2 = px.box(
-            box_df, 
-            x="Churn Label", 
-            y="Customer service calls", 
-            color="Churn Label",
-            color_discrete_map={"No (Retained)": RETAIN_COLOR, "Yes (Churned)": CHURN_COLOR}
-        )
-        fig2 = clean_layout(fig2, "Service Calls Impact on Churn")
+        fig2 = go.Figure()
+        
+        for churn_val, label, color in [(0, 'Retained', RETAIN_COLOR), (1, 'Churned', CHURN_COLOR)]:
+            data = box_df[box_df['Churn'] == churn_val]['Customer service calls']
+            fig2.add_trace(go.Violin(
+                y=data,
+                name=label,
+                box_visible=True,
+                meanline_visible=True,
+                fillcolor=color,
+                opacity=0.6,
+                line_color=color
+            ))
+        
+        fig2 = apply_modern_theme(fig2, "Service Calls Distribution by Churn")
+        fig2.update_yaxes(title_text="Customer Service Calls")
         st.plotly_chart(fig2, use_container_width=True)
 
+    # --- ROW 2: RISK ANALYSIS ---
+    st.markdown("### Risk Segmentation & Plan Analysis")
     col_left_2, col_right_2 = st.columns(2)
 
-    # PLOT 3: Sunburst Chart
     with col_left_2:
-        sun_data = filtered_df.groupby(["International plan", "Voice mail plan"])["Churn"].agg(['mean', 'count']).reset_index()
-        sun_data['Churn Rate'] = sun_data['mean']
-        sun_data['International Plan'] = sun_data['International plan'].map({0: "No Intl", 1: "Intl Plan"})
-        sun_data['Voice Mail'] = sun_data['Voice mail plan'].map({0: "No VM", 1: "VM Plan"})
-        
-        fig3 = px.sunburst(
-            sun_data, 
-            path=["International Plan", "Voice Mail"], 
-            values='count',
-            color="Churn Rate",
-            color_continuous_scale="RdYlBu_r", 
-            hover_data=["Churn Rate"]
+        # Enhanced grouped bar chart
+        plan_data = filtered_df.groupby(['International plan', 'Voice mail plan'])['Churn'].agg(['mean', 'count']).reset_index()
+        plan_data['Plan Combo'] = plan_data.apply(
+            lambda x: f"Intl: {'Yes' if x['International plan']==1 else 'No'}, VM: {'Yes' if x['Voice mail plan']==1 else 'No'}", 
+            axis=1
         )
-        fig3.update_layout(title="Churn Risk by Plan Combination", font=dict(family="Segoe UI"))
+        plan_data['Churn Rate %'] = plan_data['mean'] * 100
+        
+        fig3 = go.Figure()
+        fig3.add_trace(go.Bar(
+            x=plan_data['Plan Combo'],
+            y=plan_data['Churn Rate %'],
+            marker=dict(
+                color=plan_data['Churn Rate %'],
+                colorscale=[[0, RETAIN_COLOR], [0.5, ACCENT], [1, CHURN_COLOR]],
+                showscale=True,
+                colorbar=dict(title="Churn %")
+            ),
+            text=[f"{v:.1f}%" for v in plan_data['Churn Rate %']],
+            textposition='outside',
+            textfont=dict(size=11, color='white'),
+            hovertemplate='<b>%{x}</b><br>Churn Rate: %{y:.1f}%<br>Customers: %{customdata}<extra></extra>',
+            customdata=plan_data['count']
+        ))
+        
+        fig3 = apply_modern_theme(fig3, "Churn Rate by Plan Combination")
+        fig3.update_xaxes(title_text="Plan Combination", tickangle=-45)
+        fig3.update_yaxes(title_text="Churn Rate (%)")
         st.plotly_chart(fig3, use_container_width=True)
 
-    # PLOT 4: Correlation Heatmap (FIXED CRASH)
     with col_right_2:
-        # Define preferred columns
+        # Replace treemap with stacked bar chart (more stable)
+        risk_df = filtered_df.copy()
+        risk_df['Service Tier'] = pd.cut(
+            risk_df['Customer service calls'],
+            bins=[-1, 1, 3, 10],
+            labels=['Low (0-1)', 'Medium (2-3)', 'High (4+)']
+        )
+        
+        # Remove NaN values
+        risk_df = risk_df.dropna(subset=['Service Tier'])
+        
+        if len(risk_df) > 0:
+            # Calculate churn rate by service tier
+            tier_data = risk_df.groupby(['Service Tier', 'Churn']).size().unstack(fill_value=0)
+            tier_data['Total'] = tier_data.sum(axis=1)
+            tier_data['Churn_Rate'] = (tier_data[1] / tier_data['Total'] * 100).round(1)
+            tier_data = tier_data.reset_index()
+            
+            fig4 = go.Figure()
+            
+            # Stacked bars for retained and churned
+            fig4.add_trace(go.Bar(
+                name='Retained',
+                x=tier_data['Service Tier'],
+                y=tier_data[0],
+                marker_color=RETAIN_COLOR,
+                text=tier_data[0],
+                textposition='inside'
+            ))
+            
+            fig4.add_trace(go.Bar(
+                name='Churned',
+                x=tier_data['Service Tier'],
+                y=tier_data[1],
+                marker_color=CHURN_COLOR,
+                text=tier_data[1],
+                textposition='inside'
+            ))
+            
+            fig4.update_layout(barmode='stack')
+            fig4 = apply_modern_theme(fig4, "Customer Risk by Service Calls")
+            fig4.update_xaxes(title_text="Service Call Tier")
+            fig4.update_yaxes(title_text="Number of Customers")
+            st.plotly_chart(fig4, use_container_width=True)
+        else:
+            st.info("No data available for risk segmentation with current filters")
+
+    # --- ROW 3: CORRELATION & INSIGHTS ---
+    st.markdown("### Feature Relationships")
+    col_left_3, col_right_3 = st.columns([2, 1])
+
+    with col_left_3:
+        # Correlation heatmap with better styling
         preferred_cols = [
             'Total day minutes', 'Total eve minutes', 'Total night minutes', 
             'Total intl minutes', 'Customer service calls', 'Account length', 'Churn'
         ]
-        # FIX: Only use columns that ACTUALLY exist in your data
         existing_cols = [c for c in preferred_cols if c in filtered_df.columns]
         
         corr_matrix = filtered_df[existing_cols].corr().round(2)
         
-        fig4 = px.imshow(
-            corr_matrix, 
-            text_auto=True, 
-            aspect="auto",
-            color_continuous_scale="RdBu_r", 
-            zmin=-1, zmax=1
-        )
-        fig4.update_layout(title="Feature Correlation Heatmap", font=dict(family="Segoe UI"))
-        st.plotly_chart(fig4, use_container_width=True)
-    
+        fig5 = go.Figure(data=go.Heatmap(
+            z=corr_matrix.values,
+            x=corr_matrix.columns,
+            y=corr_matrix.columns,
+            colorscale='RdBu_r',
+            zmid=0,
+            zmin=-1,
+            zmax=1,
+            text=corr_matrix.values,
+            texttemplate='%{text:.2f}',
+            textfont={"size": 10},
+            colorbar=dict(title="Correlation", thickness=15, len=0.7)
+        ))
+        
+        fig5 = apply_modern_theme(fig5, "Feature Correlation Matrix")
+        fig5.update_xaxes(side="bottom", tickangle=-45)
+        fig5.update_layout(height=450)
+        st.plotly_chart(fig5, use_container_width=True)
+
+    with col_right_3:
+        # Key insights card
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    padding: 25px; border-radius: 15px; height: 400px; color: white;'>
+            <h3 style='margin-top: 0; font-size: 20px;'>Key Insights</h3>
+            <hr style='border-color: rgba(255,255,255,0.3);'>
+            <div style='font-size: 14px; line-height: 1.8;'>
+                <p><b>Service Calls:</b> Strongest churn predictor</p>
+                <p><b>International Plan:</b> High churn risk</p>
+                <p><b>Usage Patterns:</b> Extreme users churn more</p>
+                <p><b>Account Age:</b> First year is critical</p>
+                <p><b>Voicemail:</b> Retention indicator</p>
+                <br>
+                <p style='background: rgba(255,255,255,0.2); padding: 10px; border-radius: 8px; margin-top: 20px;'>
+                    <b>Action:</b> Target customers with 3+ service calls for retention campaigns
+                </p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
 # Footer
 st.sidebar.markdown("---")
 st.sidebar.caption("Churn Prediction System © 2025")
