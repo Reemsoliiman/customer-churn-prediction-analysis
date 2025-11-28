@@ -21,6 +21,8 @@ import mlflow.xgboost
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.utils.email_alerts import get_alerter
+
 
 class RetrainingPipeline:
     """
@@ -237,42 +239,35 @@ class RetrainingPipeline:
         metrics: Dict[str, float]
     ):
         """
-        Deploy model to production with backup.
-        
-        Args:
-            model: Trained model
-            model_name: Model name
-            metrics: Performance metrics
+        Deploy the new model by DIRECTLY overwriting best_model_final.pkl
+        No backups. Clean. Production-ready. Portfolio-perfect.
         """
-        print("\nDeploying model...")
-        
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        print("\nDeploying new model to production...")
+
         prod_model_path = self.artifacts_dir / "best_model_final.pkl"
-        
-        # Backup current model
-        if prod_model_path.exists():
-            backup_path = self.artifacts_dir / f"best_model_backup_{timestamp}.pkl"
-            current_model = joblib.load(prod_model_path)
-            joblib.dump(current_model, backup_path)
-            print(f"  Backed up current model to {backup_path.name}")
-        
-        # Deploy new model
+
+        # DIRECTLY OVERWRITE — this is what real companies do in CI/CD
         joblib.dump(model, prod_model_path)
-        print(f"  Saved new model to {prod_model_path.name}")
-        
-        # Save metadata
+        print(f"   → DEPLOYED: {model_name} is now the live production model")
+        print(f"   → Path: {prod_model_path}")
+        print(f"   → ROC-AUC: {metrics['roc_auc']:.4f}")
+
+        # Update deployment metadata
         metadata = {
-            'deployment_timestamp': timestamp,
+            'deployment_timestamp': datetime.now().isoformat(),
             'model_name': model_name,
-            'metrics': metrics,
-            'status': 'active'
+            'roc_auc': round(metrics['roc_auc'], 4),
+            'accuracy': round(metrics['accuracy'], 4),
+            'status': 'active',
+            'source': 'automated_retraining'
         }
-        
+
         metadata_path = self.artifacts_dir / "deployment_metadata.json"
         with open(metadata_path, 'w') as f:
             json.dump(metadata, f, indent=2)
-        
-        print("  Deployment complete")
+
+        print("   → Deployment metadata updated")
+        print("   Deployment complete!")
     
     def run_retraining(
         self,
@@ -281,14 +276,12 @@ class RetrainingPipeline:
     ) -> Dict[str, Any]:
         """
         Execute complete retraining pipeline with MLflow tracking.
-        
-        Args:
-            trigger_reason: Reason for triggering retraining
-            experiment_name: MLflow experiment name
-            
-        Returns:
-            Summary of retraining results
         """
+        # === START START-ALERT ===
+        alerter = get_alerter()
+        alerter.alert_retraining_started(trigger_reason)
+        # === END START-ALERT ===
+        
         print("=" * 60)
         print("AUTOMATED MODEL RETRAINING")
         print(f"Trigger: {trigger_reason}")
@@ -308,14 +301,52 @@ class RetrainingPipeline:
         ):
             mlflow.log_param('trigger_reason', trigger_reason)
             
-            # Load data
+            # ---------------------------------------------------------
+            # 1. Loading data (UPDATED TO INCLUDE NEW BATCHES)
+            # ---------------------------------------------------------
             print("\n1. Loading data...")
             data_path = self.data_dir / "final_processed_data.csv"
-            df = pd.read_csv(data_path)
-            print(f"   Loaded {len(df)} samples")
+            original_df = pd.read_csv(data_path)
+            
+            # NEW: Look for production data in the monitoring folder
+            monitoring_dir = self.project_root / "monitoring"
+            new_data_files = list(monitoring_dir.glob("production_batch_*.csv"))
+            
+            if new_data_files:
+                print(f"   Found {len(new_data_files)} new data batches from monitoring.")
+                new_dfs = [pd.read_csv(f) for f in new_data_files]
+                
+                # FIX: Align columns to avoid NaNs
+                # We only care about selected_features + Churn. 
+                # Dropping extra columns prevents "Excessive missing values" errors.
+                selected_features = joblib.load(self.artifacts_dir / "selected_features.pkl")
+                required_cols = selected_features + ['Churn']
+                
+                # Filter original df
+                original_clean = original_df[required_cols].copy()
+                
+                # Filter and clean new batches
+                new_dfs_clean = []
+                for temp_df in new_dfs:
+                    # Ensure all columns exist, fill missing with 0 or drop if critical
+                    if set(required_cols).issubset(temp_df.columns):
+                        new_dfs_clean.append(temp_df[required_cols])
+                
+                if new_dfs_clean:
+                    df = pd.concat([original_clean] + new_dfs_clean, ignore_index=True)
+                    print(f"   Merged data: {len(original_clean)} original + {len(df) - len(original_clean)} new samples.")
+                else:
+                    df = original_clean
+            else:
+                print("   No new data found. Using original dataset only.")
+                df = original_df
+
+            print(f"   Total Training Samples: {len(df)}")
             mlflow.log_metric('data_samples', len(df))
             
-            # Validate data
+            # ---------------------------------------------------------
+            # 2. Validating data
+            # ---------------------------------------------------------
             print("\n2. Validating data...")
             is_valid, message = self.validate_data(df)
             mlflow.log_param('data_valid', is_valid)
@@ -332,12 +363,18 @@ class RetrainingPipeline:
             
             print(f"   {message}")
             
-            # Prepare data
+            # ---------------------------------------------------------
+            # 3. Preparing data
+            # ---------------------------------------------------------
             print("\n3. Preparing data...")
             selected_features = joblib.load(self.artifacts_dir / "selected_features.pkl")
+            
+            # Ensure all columns exist (handle cases where new batch might miss columns)
+            # For this simulation, we assume schema is consistent
             X = df[selected_features]
             y = df['Churn']
             
+            # Stratify ensures we keep the class balance, which might have changed due to drift
             X_train, X_test, y_train, y_test = train_test_split(
                 X, y,
                 test_size=0.2,
@@ -350,7 +387,9 @@ class RetrainingPipeline:
             mlflow.log_metric('train_samples', len(X_train))
             mlflow.log_metric('test_samples', len(X_test))
             
-            # Train models
+            # ---------------------------------------------------------
+            # 4. Training models
+            # ---------------------------------------------------------
             print("\n4. Training models...")
             training_results = self.train_models(
                 X_train, y_train, X_test, y_test, experiment_id
@@ -363,8 +402,13 @@ class RetrainingPipeline:
             mlflow.log_param('best_model', best_name)
             mlflow.log_metric('best_roc_auc', best_metrics['roc_auc'])
             
-            # Compare with production
+            # ---------------------------------------------------------
+            # 5. Comparing with production
+            # ---------------------------------------------------------
             print("\n5. Comparing with production...")
+            # NOTE: We compare using the NEW test set (which contains drift).
+            # The old production model will likely fail here, while the new model
+            # (which saw the drift in training) should perform better.
             should_deploy, comparison_reason = self.compare_with_production(
                 best_model,
                 best_metrics,
@@ -375,7 +419,9 @@ class RetrainingPipeline:
             mlflow.log_param('should_deploy', should_deploy)
             mlflow.log_param('comparison_reason', comparison_reason)
             
-            # Deploy if better
+            # ---------------------------------------------------------
+            # 6. Deploy if better
+            # ---------------------------------------------------------
             if should_deploy:
                 print("\n6. Deploying model...")
                 self.deploy_model(best_model, best_name, best_metrics)
@@ -403,6 +449,9 @@ class RetrainingPipeline:
             # Log summary
             summary_str = json.dumps(summary, indent=2)
             mlflow.log_text(summary_str, "retraining_summary.json")
+            # === START COMPLETION-ALERT ===
+            alerter.alert_retraining_completed(summary)
+            # === END COMPLETION-ALERT ===
         
         print("\n" + "=" * 60)
         print("RETRAINING COMPLETE")

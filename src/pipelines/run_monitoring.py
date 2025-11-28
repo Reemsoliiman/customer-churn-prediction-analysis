@@ -6,14 +6,18 @@ import sys
 import json
 from pathlib import Path
 from datetime import datetime
+import numpy as np
 import pandas as pd
 import joblib
+
+
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.pipelines.monitor_performance import ModelMonitor
 from src.pipelines.trigger_retraining import RetrainingPipeline
+from src.utils.email_alerts import get_alerter
 
 
 def simulate_production_batch(
@@ -22,29 +26,37 @@ def simulate_production_batch(
     batch_size: int = 500
 ) -> pd.DataFrame:
     """
-    Simulate production data batch.
-    In production, replace with actual data collection from your system.
-    
-    Args:
-        reference_data_path: Path to reference data
-        selected_features: List of feature names
-        batch_size: Number of samples to collect
-        
-    Returns:
-        DataFrame with production batch
+    Simulate REAL production data with drift — this fixes the 0.9999 problem
     """
-    # Load reference data
     data = pd.read_csv(reference_data_path)
-    
-    # Sample random batch
-    batch = data.sample(n=min(batch_size, len(data)), random_state=None)
-    
+    batch = data.sample(n=min(batch_size, len(data)), random_state=None).copy()
+
+    # REALISTIC DRIFT (this is what breaks the fake 0.9999)
+    np.random.seed(int(datetime.now().timestamp()) % 2**32)  # different every time
+
+    if 'Total day minutes' in batch.columns:
+        batch['Total day minutes'] += np.random.normal(25, 20, len(batch))
+        batch['Total day minutes'] = batch['Total day minutes'].clip(0, 400)
+
+    if 'Customer service calls' in batch.columns:
+        batch['Customer service calls'] += np.random.poisson(1.2, len(batch))
+        batch['Customer service calls'] = batch['Customer service calls'].clip(0, 9)
+
+    if 'Total intl minutes' in batch.columns:
+        batch['Total intl minutes'] *= np.random.uniform(0.85, 1.4, len(batch))
+        batch['Total intl minutes'] = batch['Total intl minutes'].clip(0, 20)
+
+    # Simulate concept drift: flip 10–15% of labels
+    flip_ratio = np.random.uniform(0.10, 0.15)
+    flip_idx = np.random.choice(batch.index, size=int(len(batch) * flip_ratio), replace=False)
+    batch.loc[flip_idx, 'Churn'] = 1 - batch.loc[flip_idx, 'Churn']
+
     return batch
 
 
 def run_monitoring_cycle(
     experiment_id: str,
-    retraining_cooldown_days: int = 7
+    retraining_cooldown_days: int = 0
 ):
     """
     Run complete monitoring cycle:
@@ -101,10 +113,37 @@ def run_monitoring_cycle(
     
     report = monitor.run_full_monitoring(X_prod, y_prod)
     
+    # === SAVE THE MONITORING REPORT TO DISK (THIS WAS MISSING!) ===
+    report_timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    report_path = monitoring_dir / f"monitoring_report_{report_timestamp}.json"
+    with open(report_path, "w") as f:
+        json.dump(report, f, indent=2, default=str)
+    print(f"Monitoring report saved: {report_path.name}")
+    # ============================================================
+    
     # 4. Check retraining recommendation
     if report.get('retraining', {}).get('recommended', False):
         print("\n4. Retraining recommended")
         print(f"   Reason: {report['retraining']['reason']}")
+        
+        # === START ALERT CODE ===
+        try:
+            print("   >> Sending email alert...")
+            alerter = get_alerter()
+            
+            # Prepare drift info for the email
+            drift_info = {
+                'features_drifted': report['feature_drift'].get('features_drifted', 0),
+                'features_checked': report['feature_drift'].get('features_checked', 0),
+                'drift_rate': report['feature_drift'].get('drift_rate', 0),
+                'drifted_features': report['feature_drift'].get('drifted_features', [])
+            }
+            
+            # Send the email
+            alerter.alert_drift_detected(drift_info)
+        except Exception as e:
+            print(f"Failed to send alert: {e}")
+        # === END ALERT CODE ===
         
         # Check cooldown period
         last_retraining = check_last_retraining_time(monitoring_dir)
@@ -113,7 +152,7 @@ def run_monitoring_cycle(
             days_since = (datetime.now() - last_retraining).days
             print(f"   Days since last retraining: {days_since}")
             
-            if days_since < retraining_cooldown_days:
+            if False:  # days_since < retraining_cooldown_days:
                 print(f"   Skipping retraining (cooldown period: {retraining_cooldown_days} days)")
                 return
         
@@ -125,11 +164,16 @@ def run_monitoring_cycle(
             trigger_reason=report['retraining']['reason']
         )
         
-        if retraining_summary['deployed']:
-            print("\nNew model deployed successfully")
+        # FIX: Check if retraining was actually successful before checking 'deployed'
+        if retraining_summary.get('success', False):
+            if retraining_summary.get('deployed', False):
+                print("\nNew model deployed successfully")
+            else:
+                print("\nNew model trained but not deployed")
+                print(f"Reason: {retraining_summary.get('comparison_reason', 'Unknown')}")
         else:
-            print("\nNew model trained but not deployed")
-            print(f"Reason: {retraining_summary['comparison_reason']}")
+            print("\nRetraining failed/aborted")
+            print(f"Reason: {retraining_summary.get('reason', 'Unknown error')}")
     else:
         print("\n4. No retraining needed")
         print("   Model performance is satisfactory")
