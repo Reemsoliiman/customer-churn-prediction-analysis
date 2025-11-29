@@ -164,7 +164,7 @@ def main(experiment_id: str):
             else:
                 mlflow.sklearn.log_model(model, "model")
             
-            # Save model to disk
+            
             model_path = MODELS_DIR / f"{name}.pkl"
             joblib.dump(model, model_path)
             print(f"    Saved to {model_path.name}")
