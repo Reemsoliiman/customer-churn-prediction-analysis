@@ -27,17 +27,38 @@ A **production-grade MLOps system** for predicting telecom customer churn — wi
 ```
 customer-churn-prediction-analysis/
 ├── data/
-│   ├── raw/                  # churn-bigml-20.csv + churn-bigml-80.csv
-│   └── processed/            # cleaned_data.csv → final_processed_data.csv
+│   ├── raw/                  # churn-bigml-20.csv, churn-bigml-80.csv, merged_churn_data.csv
+│   └── processed/            # cleaned_data.csv, final_processed_data.csv
 ├── models/
 │   ├── trained_models/       # All trained models (.pkl files)
-│   └── artifacts/            # best_model_final.pkl, selected_features.pkl, test_data.pkl, etc.
+│   │   ├── logistic_regression.pkl
+│   │   ├── decision_tree.pkl
+│   │   ├── random_forest.pkl
+│   │   ├── xgboost.pkl
+│   │   └── best_churn_model.pkl
+│   └── artifacts/            # Model artifacts and metadata
+│       ├── best_model_final.pkl
+│       ├── selected_features.pkl
+│       ├── test_data.pkl
+│       ├── deployment_metadata.json
+│       ├── evaluation_results.json
+│       └── training_summary.json
 ├── monitoring/               # Auto-generated reports & production batches
+│   ├── monitoring_report_*.json
+│   └── production_batch_*.csv
 ├── notebooks/                # EDA and analysis notebooks
 │   ├── 01_data_exploration.ipynb
 │   ├── 02_feature_engineering.ipynb
 │   ├── 03_model_development.ipynb
 │   └── 04_model_deployment.ipynb
+├── reports/                  # Project documentation and reports
+│   ├── Data_Analysis_Report.md
+│   ├── EDA_Report.md
+│   ├── Feature_Engineering_Summary.md
+│   ├── Final_Project_Report.md
+│   ├── MLOps_Report.md
+│   ├── Model_Evaluation_Report.md
+│   └── MONITORING.md         # Monitoring system documentation
 ├── src/
 │   ├── pipelines/            # All pipeline steps + monitoring + retraining
 │   │   ├── validate_data.py
@@ -59,13 +80,12 @@ customer-churn-prediction-analysis/
 │       ├── helpers.py        # Feature engineering functions
 │       └── email_alerts.py   # Alert infrastructure
 ├── visualizations/           # Saved visualization files
-│   ├── interactive/          # HTML visualizations
-│   └── static/               # PNG visualizations
-├── mlruns/                   # MLflow tracking database
+│   ├── interactive/          # HTML visualizations (confusion matrices, ROC curves, SHAP, etc.)
+│   └── static/               # PNG visualizations (distributions, heatmaps, etc.)
+├── mlruns/                   # MLflow tracking database (auto-generated)
 ├── run_all.py                # Full pipeline orchestrator
 ├── requirements.txt          # Python dependencies
-├── config.yaml               # Project configuration
-└── MONITORING.md             # Monitoring system documentation
+└── config.yaml               # Project configuration
 ```
 
 ---
@@ -251,7 +271,7 @@ Typical performance metrics (may vary based on data and hyperparameters):
 **Utilities**:
 - joblib 1.4.2
 - requests 2.32.3
-- scipy (used for statistical tests in monitoring)
+- scipy (dependency of scikit-learn, used for statistical tests in monitoring)
 
 ---
 
@@ -279,5 +299,13 @@ The project uses the merged dataset (churn-bigml-20.csv + churn-bigml-80.csv) co
 
 ## Documentation
 
-- **Monitoring System**: See `MONITORING.md` for detailed documentation on the monitoring and retraining pipeline
+- **Monitoring System**: See `reports/MONITORING.md` for detailed documentation on the monitoring and retraining pipeline
+- **Project Reports**: See `reports/` directory for comprehensive analysis reports:
+  - `MONITORING.md` - Monitoring system documentation
+  - `MLOps_Report.md` - MLOps infrastructure and deployment
+  - `Final_Project_Report.md` - Complete project overview
+  - `Feature_Engineering_Summary.md` - Feature engineering details
+  - `Model_Evaluation_Report.md` - Model performance analysis
+  - `EDA_Report.md` - Exploratory data analysis
+  - `Data_Analysis_Report.md` - Data analysis insights
 - **Notebooks**: Explore `notebooks/` directory for detailed EDA and analysis
