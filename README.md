@@ -25,67 +25,27 @@ A **production-grade MLOps system** for predicting telecom customer churn — wi
 ## Project Structure
 
 ```
-customer-churn-prediction-analysis/
-├── data/
-│   ├── raw/                  # churn-bigml-20.csv, churn-bigml-80.csv, merged_churn_data.csv
-│   └── processed/            # cleaned_data.csv, final_processed_data.csv
-├── models/
-│   ├── trained_models/       # All trained models (.pkl files)
-│   │   ├── logistic_regression.pkl
-│   │   ├── decision_tree.pkl
-│   │   ├── random_forest.pkl
-│   │   ├── xgboost.pkl
-│   │   └── best_churn_model.pkl
-│   └── artifacts/            # Model artifacts and metadata
-│       ├── best_model_final.pkl
-│       ├── selected_features.pkl
-│       ├── test_data.pkl
-│       ├── deployment_metadata.json
-│       ├── evaluation_results.json
-│       └── training_summary.json
-├── monitoring/               # Auto-generated reports & production batches
-│   ├── monitoring_report_*.json
-│   └── production_batch_*.csv
-├── notebooks/                # EDA and analysis notebooks
-│   ├── 01_data_exploration.ipynb
-│   ├── 02_feature_engineering.ipynb
-│   ├── 03_model_development.ipynb
-│   └── 04_model_deployment.ipynb
-├── reports/                  # Project documentation and reports
-│   ├── Data_Analysis_Report.md
-│   ├── EDA_Report.md
-│   ├── Feature_Engineering_Summary.md
-│   ├── Final_Project_Report.md
-│   ├── MLOps_Report.md
-│   ├── Model_Evaluation_Report.md
-│   └── MONITORING.md         # Monitoring system documentation
-├── src/
-│   ├── pipelines/            # All pipeline steps + monitoring + retraining
-│   │   ├── validate_data.py
-│   │   ├── merge_data.py
-│   │   ├── preprocess.py
-│   │   ├── engineer_features.py
-│   │   ├── train.py
-│   │   ├── evaluate.py
-│   │   ├── monitor_performance.py
-│   │   ├── run_monitoring.py
-│   │   └── trigger_retraining.py
-│   ├── api/                  # FastAPI service
-│   │   ├── main.py
-│   │   ├── predict.py
-│   │   └── schemas.py
-│   ├── app/                  # Streamlit dashboard
-│   │   └── streamlit_app.py
-│   └── utils/                # Shared utilities
-│       ├── helpers.py        # Feature engineering functions
-│       └── email_alerts.py   # Alert infrastructure
-├── visualizations/           # Saved visualization files
-│   ├── interactive/          # HTML visualizations (confusion matrices, ROC curves, SHAP, etc.)
-│   └── static/               # PNG visualizations (distributions, heatmaps, etc.)
-├── mlruns/                   # MLflow tracking database (auto-generated)
-├── run_all.py                # Full pipeline orchestrator
-├── requirements.txt          # Python dependencies
-└── config.yaml               # Project configuration
+customer-churn-prediction-analysis/ 
+├── data/ 
+│   ├── raw/                    # Source CSV files 
+│   └── processed/              # Cleaned data, final features 
+├── models/ 
+│   ├── trained_models/         # All trained models (.pkl) 
+│   └── artifacts/              # Best model, features, test data 
+├── monitoring/                 # Performance reports, batches 
+├── src/ 
+│   ├── pipelines/              # 7-step pipeline + monitoring 
+│   ├── api/                    # FastAPI endpoint 
+│   ├── app/                    # Streamlit dashboard 
+│   └── utils/                  # Feature engineering, alerts 
+├── visualizations/ 
+│   ├── interactive/            # Plotly HTML charts 
+│   └── static/                 # PNG visualizations 
+├── reports/                    # Full documentation 
+├── notebooks/                  # EDA and analysis notebooks 
+├── mlruns/                     # MLflow tracking 
+├── run_all.py                  # Pipeline orchestrator 
+└── requirements.txt
 ```
 
 ---
