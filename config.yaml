@@ -49,6 +49,5 @@ features:
 # Deployment
 deployment:
   streamlit:
-    analyze_app: "streamlit run src/deployment/analyze_app.py"
-    predict_app: "streamlit run src/deployment/predict_app.py"
+    streamlit_app: "streamlit run src/app/streamlit_app.py"
   port: 8501
